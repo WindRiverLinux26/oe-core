@@ -1,0 +1,53 @@
+From 636fb16b58afa85d76e43008a672cc844fc6e240 Mon Sep 17 00:00:00 2001
+From: Hongxu Jia <hongxu.jia@windriver.com>
+Date: Tue, 11 Nov 2025 11:35:39 +0800
+Subject: [PATCH 1/2] pseudo_ipc.h: make 8 byte alignment for structure
+ pseudo_msg_t
+
+typedef struct {
+    pseudo_msg_type_t type;
+    ...
+    char path[];
+} pseudo_msg_t;
+
+The [] item at the end of the struct is a C99 feature:
+Flexible Array Members in a structure in C [1]. The size
+of path in structure should be 0.
+
+On 64-bit arch, sizeof(pseudo_msg_t) = 80, but PSEUDO_HEADER_SIZE =
+offsetof(pseudo_msg_t, path) = 76, the reason is 8 byte alignment
+in 64-bit arch.
+
+The differ between sizeof(pseudo_msg_t) and PSEUDO_HEADER_SIZE
+made memory overlab in memcpy, such as
+
+  memcpy(oldmsg, msg, PSEUDO_HEADER_SIZE);
+  memcpy(newmsg, old, sizeof(pseudo_msg_t) + old->pathlen);
+
+Add 4 chars to structure as reserved for 8 byte alignment, then
+PSEUDO_HEADER_SIZE = sizeof(pseudo_msg_t) = 80.
+
+[1] https://www.geeksforgeeks.org/c/flexible-array-members-structure-c/
+
+Upstream-Status: Submitted [https://lists.yoctoproject.org/g/yocto-patches/message/2484?p=%2C%2C%2C20%2C0%2C0%2C0%3A%3ACreated%2C%2C%2C20%2C2%2C0%2C116238032%2Cd%253D3&d=3]
+
+Signed-off-by: Hongxu Jia <hongxu.jia@windriver.com>
+---
+ pseudo_ipc.h | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/pseudo_ipc.h b/pseudo_ipc.h
+index d945257..2836cc4 100644
+--- a/pseudo_ipc.h
++++ b/pseudo_ipc.h
+@@ -26,6 +26,7 @@ typedef struct {
+ 	unsigned int pathlen;
+ 	int nlink;
+ 	int deleting;
++	char reserved[4];
+ 	char path[];
+ } pseudo_msg_t;
+ 
+-- 
+2.34.1
+

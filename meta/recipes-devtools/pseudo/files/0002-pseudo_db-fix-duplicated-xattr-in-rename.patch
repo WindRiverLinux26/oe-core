@@ -1,0 +1,80 @@
+From 6bf8995a4720b83e197a6da9f60a83c51c6ba19c Mon Sep 17 00:00:00 2001
+From: Hongxu Jia <hongxu.jia@windriver.com>
+Date: Tue, 11 Nov 2025 20:12:49 +0800
+Subject: [PATCH 2/2] pseudo_db: fix duplicated xattr in rename
+
+In commit [fbaffe9 Handle rename(3) across devices.], it defines function
+pdb_update_inode to change dev/inode for a given path -- used only by
+RENAME for now.
+
+In commit [58e4171 xattr work: handle deletes and renames], in function
+pdb_update_inode, it defines oldmsg to test the existence of msg->path.
+If yes, copy xattrs from oldmsg to msg. If both of oldmsg and msg have
+the same dev/inode, it caused duplicated xattrs in the given path.
+Here are the reproducible steps:
+
+1) Create a file in rootfs
+mkdir -p rootfs; touch rootfs/file
+
+2) Use IMA/EVM signing utility to set xattr
+evmctl ima_sign --hashalgo sha256 --key path-to/ima_keys/x509_ima.key --pass=xxx ./rootfs/file
+
+3) List xattr, get security.ima
+$ getfattr -d -m ^ -R -- rootfs/
+- rootfs/
+|# file: rootfs//file
+security.ima=0sAwIEOI1nBgEASdQgr4UDRTIYmF7q5SHFsyt3J/TO0Pwwz/hDiV3m4kjWALSKGC0Ea7wel6cZ1CcA/hQQ6gW5e86kswTCFexmM6qdE1MVG1IrP1L9YZcpJ3Ghh5bJS8S7Kb/J2FCaaPW9skGn8vG339CRHUuNz2z6uy6pryjLAVoAyl0jdqDlUTmhzfd7Bq6i1HLGSyBxm9nPwFDe4E5ubpwJlrN11YHUJSWVoAmpMfPLgu2bDalAz/I6tTMFdrEoR7SH0F9LuwKGnq4CAzrpsts/8/islsKWWPmmalv635EGG/k7g7zY0D/cHjc3YyaMYtvd43OWbTu+2j6w8IywmaZXN/YZg4AMgw==
+
+4) Rename
+$ mv rootfs/file rootfs/rename_file
+
+5) List xattr, found duplicated security.ima
+$ getfattr -d -m ^ -R -- rootfs/
+- rootfs/
+|# file: rootfs//rename_file
+security.ima=0sAwIEOI1nBgEASdQgr4UDRTIYmF7q5SHFsyt3J/TO0Pwwz/hDiV3m4kjWALSKGC0Ea7wel6cZ1CcA/hQQ6gW5e86kswTCFexmM6qdE1MVG1IrP1L9YZcpJ3Ghh5bJS8S7Kb/J2FCaaPW9skGn8vG339CRHUuNz2z6uy6pryjLAVoAyl0jdqDlUTmhzfd7Bq6i1HLGSyBxm9nPwFDe4E5ubpwJlrN11YHUJSWVoAmpMfPLgu2bDalAz/I6tTMFdrEoR7SH0F9LuwKGnq4CAzrpsts/8/islsKWWPmmalv635EGG/k7g7zY0D/cHjc3YyaMYtvd43OWbTu+2j6w8IywmaZXN/YZg4AMgw==
+security.ima=0sAwIEOI1nBgEASdQgr4UDRTIYmF7q5SHFsyt3J/TO0Pwwz/hDiV3m4kjWALSKGC0Ea7wel6cZ1CcA/hQQ6gW5e86kswTCFexmM6qdE1MVG1IrP1L9YZcpJ3Ghh5bJS8S7Kb/J2FCaaPW9skGn8vG339CRHUuNz2z6uy6pryjLAVoAyl0jdqDlUTmhzfd7Bq6i1HLGSyBxm9nPwFDe4E5ubpwJlrN11YHUJSWVoAmpMfPLgu2bDalAz/I6tTMFdrEoR7SH0F9LuwKGnq4CAzrpsts/8/islsKWWPmmalv635EGG/k7g7zY0D/cHjc3YyaMYtvd43OWbTu+2j6w8IywmaZXN/YZg4AMgw==
+
+This commit:
+
+- Due to oldmsg is static variable, clean up the memory of oldmsg
+  to avoid dirty data from last call.
+
+- Other than copy the whole msg to oldmsg, only copy path and
+  pathlen from msg to oldmsg, use function pdb_find_file_path
+  to fill oldmsg->dev and oldmsg->ino if it existed
+
+- Copy xattr only if the existed oldmsg have different dev/inode
+  with msg to avoid duplicated xattr for the same dev/indoe
+
+Upstream-Status: Submitted [https://lists.yoctoproject.org/g/yocto-patches/message/2483?p=%2C%2C%2C20%2C0%2C0%2C0%3A%3ACreated%2C%2C%2C20%2C2%2C0%2C116238031%2Cd%253D3&d=3]
+
+Signed-off-by: Hongxu Jia <hongxu.jia@windriver.com>
+---
+ pseudo_db.c | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
+
+diff --git a/pseudo_db.c b/pseudo_db.c
+index 8b23938..d6ae1d3 100644
+--- a/pseudo_db.c
++++ b/pseudo_db.c
+@@ -2188,10 +2188,13 @@ pdb_update_inode(pseudo_msg_t *msg) {
+ 		pseudo_diag("Can't update the inode of a file without its path.\n");
+ 		return 1;
+ 	}
+-	memcpy(oldmsg, msg, sizeof(*msg) + msg->pathlen);
++	memset(oldmsg, 0, sizeof(*msg) + pseudo_path_max());
++	/* Copy path and pathlen from msg to oldmsg */
++	memcpy(oldmsg->path, msg->path, msg->pathlen);
++	oldmsg->pathlen = msg->pathlen;
+ 	found_existing = !pdb_find_file_path(oldmsg);
+-	if (found_existing) {
+-		/* we have an existing file entry */
++	if (found_existing && (msg->dev!=oldmsg->dev || msg->ino!=oldmsg->ino)) {
++		/* we have an existing file entry with different dev/inode */
+ 		pdb_copy_xattrs(oldmsg, msg);
+ 	}
+ 	sqlite3_bind_int(update, 1, msg->dev);
+-- 
+2.34.1
+

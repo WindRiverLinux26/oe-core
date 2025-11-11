@@ -3,6 +3,8 @@ require pseudo.inc
 SRC_URI = "git://git.yoctoproject.org/pseudo;branch=master;protocol=https \
            file://fallback-passwd \
            file://fallback-group \
+           file://0001-pseudo_ipc.h-make-8-byte-alignment-for-structure-pse.patch \
+           file://0002-pseudo_db-fix-duplicated-xattr-in-rename.patch \
            "
 SRC_URI:append:class-native = " \
     http://downloads.yoctoproject.org/mirror/sources/pseudo-prebuilt-2.33.tar.xz;subdir=${BB_GIT_DEFAULT_DESTSUFFIX}/prebuilt;name=prebuilt \
