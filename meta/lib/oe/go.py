@@ -35,4 +35,6 @@ def map_arch(a):
         return 'riscv64'
     elif a == 'loongarch64':
         return 'loong64'
+    elif a == 'microblazeel':
+        return ''
     raise KeyError(f"Cannot map architecture {a}")
