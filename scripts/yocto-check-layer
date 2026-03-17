@@ -52,11 +52,11 @@ def skip_layer(layer, config=""):
     """
     The config define a file used to define the layers we need to check.
     And the content looks like as below for example:
-    RECIPE_LIST_LAYERS = 'openembedded-layer chromium-browser-layer clang-layer'
+    RECIPE_LIST_LAYERS_ORIG = 'openembedded-layer chromium-browser-layer clang-layer'
     The return value True indicates we need to skip the layer
     """
     if config and os.path.exists(config):
-        logger.debug("Reading RECIPE_LIST_LAYERS from %s" % os.path.realpath(config))
+        logger.debug("Reading RECIPE_LIST_LAYERS_ORIG from %s" % os.path.realpath(config))
         layerlists = []
         collections = layer.get("collections", {})
         if collections:
@@ -64,7 +64,7 @@ def skip_layer(layer, config=""):
             logger.debug("layername: %s, collections: %s" % (layer["name"], collections))
             with open(config, 'r') as f:
                 for line in f:
-                    if line.startswith("RECIPE_LIST_LAYERS"):
+                    if line.startswith("RECIPE_LIST_LAYERS_ORIG"):
                         layerlists = line.replace("'", '').replace('"', '').split()[2:]
             if layerlists:
                 return not (collections in layerlists)
@@ -81,7 +81,7 @@ def main():
     parser.add_argument('--dependency', nargs="+",
             help='Layers to process for dependencies', action='store')
     parser.add_argument("--recipe-list-layers",
-            help='Read RECIPE_LIST_LAYERS from the file, the RECIPE_LIST_LAYERS must be in one line (optional)', action='store')
+            help='Read RECIPE_LIST_LAYERS_ORIG from the file, the RECIPE_LIST_LAYERS_ORIG must be in one line (optional)', action='store')
     parser.add_argument('--no-auto-dependency', help='Disable automatic testing of dependencies',
             action='store_true')
     parser.add_argument('--machines', nargs="+",
