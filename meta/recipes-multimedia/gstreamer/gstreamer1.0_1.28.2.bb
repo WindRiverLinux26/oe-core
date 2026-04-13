@@ -21,7 +21,6 @@ SRC_URI = "https://gstreamer.freedesktop.org/src/gstreamer/gstreamer-${PV}.tar.x
            file://0002-tests-add-support-for-install-the-tests.patch \
            file://0003-tests-use-a-dictionaries-for-environment.patch \
            file://0004-tests-add-helper-script-to-run-the-installed_tests.patch \
-           file://0001-meson-Add-gir_dir_prefix-option-to-override-gir-def.patch \
            "
 SRC_URI[sha256sum] = "ce5cd44d4ffeafdcc3dddaa072b2179c0b7cb1abf4e6c5d18d4375f8a39fe491"
 
@@ -56,8 +55,6 @@ EXTRA_OEMESON += " \
     -Ddbghelp=disabled \
     ${@gettext_oemeson(d)} \
 "
-
-EXTRA_OEMESON:append:class-target = " ${@'-Dgir_dir_prefix=${baselib}' if d.getVar('MULTILIBS') else ''}"
 
 GIR_MESON_ENABLE_FLAG = "enabled"
 GIR_MESON_DISABLE_FLAG = "disabled"
