@@ -1,7 +1,7 @@
-From 6bf8995a4720b83e197a6da9f60a83c51c6ba19c Mon Sep 17 00:00:00 2001
+From 66780cf8aa04e6bb99cfc0690d1905dc21f59d93 Mon Sep 17 00:00:00 2001
 From: Hongxu Jia <hongxu.jia@windriver.com>
 Date: Tue, 11 Nov 2025 20:12:49 +0800
-Subject: [PATCH 2/2] pseudo_db: fix duplicated xattr in rename
+Subject: [PATCH] pseudo_db: fix duplicated xattr in rename
 
 In commit [fbaffe9 Handle rename(3) across devices.], it defines function
 pdb_update_inode to change dev/inode for a given path -- used only by
@@ -50,15 +50,19 @@ This commit:
 Upstream-Status: Submitted [https://lists.yoctoproject.org/g/yocto-patches/message/2483?p=%2C%2C%2C20%2C0%2C0%2C0%3A%3ACreated%2C%2C%2C20%2C2%2C0%2C116238031%2Cd%253D3&d=3]
 
 Signed-off-by: Hongxu Jia <hongxu.jia@windriver.com>
+
+Refresh patch based on 1.9.7, the following upstream commit fix the same issue
+[1593ad3 Only copy xattrs on a rename if it's cross-filesystem]
+Signed-off-by: Changqing Li <changqing.li@windriver.com>
 ---
- pseudo_db.c | 9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ pseudo_db.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
 diff --git a/pseudo_db.c b/pseudo_db.c
-index 8b23938..d6ae1d3 100644
+index 6a33f20..53db864 100644
 --- a/pseudo_db.c
 +++ b/pseudo_db.c
-@@ -2188,10 +2188,13 @@ pdb_update_inode(pseudo_msg_t *msg) {
+@@ -2192,10 +2192,13 @@ pdb_update_inode(pseudo_msg_t *msg) {
  		pseudo_diag("Can't update the inode of a file without its path.\n");
  		return 1;
  	}
@@ -68,13 +72,12 @@ index 8b23938..d6ae1d3 100644
 +	memcpy(oldmsg->path, msg->path, msg->pathlen);
 +	oldmsg->pathlen = msg->pathlen;
  	found_existing = !pdb_find_file_path(oldmsg);
--	if (found_existing) {
+ 	if (found_existing) {
 -		/* we have an existing file entry */
-+	if (found_existing && (msg->dev!=oldmsg->dev || msg->ino!=oldmsg->ino)) {
 +		/* we have an existing file entry with different dev/inode */
- 		pdb_copy_xattrs(oldmsg, msg);
- 	}
- 	sqlite3_bind_int(update, 1, msg->dev);
+ 		if (oldmsg->dev != msg->dev || oldmsg->ino != msg->ino) {
+ 			pdb_copy_xattrs(oldmsg, msg);
+ 		}
 -- 
 2.34.1
 
