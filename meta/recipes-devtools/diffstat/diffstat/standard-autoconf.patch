@@ -1,4 +1,4 @@
-From 0069056a23b39f53a05b89b2545a3a5ad1ff070a Mon Sep 17 00:00:00 2001
+From 841f8f26b5b10fee4fed86ddb8bb97d36b118610 Mon Sep 17 00:00:00 2001
 From: Ross Burton <ross.burton@arm.com>
 Date: Wed, 18 Mar 2026 11:27:24 +0000
 Subject: [PATCH] Use standard autoconf
@@ -11,11 +11,16 @@ form of AC_OUTPUT.
 
 Upstream-Status: Inappropriate
 Signed-off-by: Ross Burton <ross.burton@arm.com>
+
+Refresh for version 1.69
+Signed-off-by: Changqing Li <changqing.li@windriver.com>
 ---
- config_h.in  | 8 --------
- configure.in | 2 +-
- 2 files changed, 1 insertion(+), 9 deletions(-)
+ config_h.in      | 8 --------
+ configure.in     | 1 -
+ configure.in.rej | 9 +++++++++
+ 3 files changed, 9 insertions(+), 9 deletions(-)
  delete mode 100644 config_h.in
+ create mode 100644 configure.in.rej
 
 diff --git a/config_h.in b/config_h.in
 deleted file mode 100644
@@ -32,17 +37,31 @@ index ac8ff1d..0000000
 -
 -@DEFS@
 diff --git a/configure.in b/configure.in
-index cb641d4..7042800 100644
+index 24dfbb9..5da5d89 100644
 --- a/configure.in
 +++ b/configure.in
-@@ -83,5 +83,6 @@ CF_WITH_MAN2HTML
- CF_DISABLE_LEAKS
+@@ -85,6 +85,5 @@ CF_DISABLE_LEAKS
  
  ###	output makefile and config.h
--AC_OUTPUT(makefile,,,cat)
-+AC_CONFIG_FILES([makefile])
-+AC_OUTPUT
+ AC_CONFIG_FILES([makefile])
+-AC_SETUP_DEFS([cat])
+ AC_OUTPUT
  CF_MAKE_DOCS(diffstat,1)
+diff --git a/configure.in.rej b/configure.in.rej
+new file mode 100644
+index 0000000..2c917a4
+--- /dev/null
++++ b/configure.in.rej
+@@ -0,0 +1,9 @@
++diff a/configure.in b/configure.in	(rejected hunks)
++@@ -83,5 +83,6 @@ CF_WITH_MAN2HTML
++ CF_DISABLE_LEAKS
++ 
++ ###	output makefile and config.h
++-AC_OUTPUT(makefile,,,cat)
+++AC_CONFIG_FILES([makefile])
+++AC_OUTPUT
++ CF_MAKE_DOCS(diffstat,1)
 -- 
-2.43.0
+2.34.1
 
