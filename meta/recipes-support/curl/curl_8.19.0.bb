@@ -14,11 +14,7 @@ SRC_URI = " \
     file://run-ptest \
     file://disable-tests \
     file://no-test-timeout.patch \
-    file://CVE-2026-5545.patch \
-    file://CVE-2026-7009.patch \
-    file://CVE-2026-7168.patch \
     file://CVE-2026-6276.patch \
-    file://CVE-2026-6253.patch \
 "
 
 SRC_URI:append:class-nativesdk = " \
