@@ -16,6 +16,7 @@ SRC_URI = "https://www.x.org/archive/individual/xserver/xwayland-${PV}.tar.xz \
           file://CVE-2026-33999.patch \
           file://CVE-2026-50258.patch \
           file://CVE-2026-34001.patch \
+          file://CVE-2026-50260.patch \
           "
 SRC_URI[sha256sum] = "f297af27a84508db9b80d1cbbcc69c3801da38eb64c72f3b5b50f582459afdd0"
 
