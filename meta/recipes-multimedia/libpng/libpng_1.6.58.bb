@@ -12,7 +12,9 @@ LIBV = "16"
 
 SRC_URI = "${SOURCEFORGE_MIRROR}/${BPN}/${BPN}${LIBV}/${BP}.tar.xz \
            file://run-ptest \
-"
+           file://CVE-2026-34757_p1.patch \
+           file://CVE-2026-34757_p2.patch \
+           "
 
 SRC_URI[sha256sum] = "28eb403f51f0f7405249132cecfe82ea5c0ef97f1b32c5a65828814ae0d34775"
 
